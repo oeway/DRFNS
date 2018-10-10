@@ -438,7 +438,7 @@ class UNetDistance(UNetBatchNorm):
                 print('  Mini-batch loss: %.5f \n ') % l
                 print('  Max value: %.5f \n ') % np.max(predictions)
                 if callback is not None:
-                    report = {'step': step, 'totalSteps': steps, 'lr': lr, 'maxValue': p.max(predictions)}
+                    report = {'step': step, 'totalSteps': steps, 'lr': lr, 'maxValue': np.max(predictions)}
                     callback(report)
                 self.Validation(DGTest, step)
         coord.request_stop()

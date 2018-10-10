@@ -1,4 +1,4 @@
-﻿
+
 <docs lang="markdown">
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1175282.svg)](https://doi.org/10.5281/zenodo.1175282)
 
@@ -83,8 +83,8 @@ class PythonPlugin():
                          "sigma2": "{id:'sigma2', type:'number', min:0.0, placeholder: 10.0}"}])
         api.register(name="Training", run=self.train,
                     ui=['Training a Unet (Normalized)',
-                        {"epoch": "{id:'mu', type:'number', min:1, placeholder: 100}",
-                         "batch_size": "{id:'sigma', type:'number', min:1, placeholder: 4}"}])
+                        {"epoch": "{id:'epoch', type:'number', min:1, placeholder: 100}",
+                         "batch_size": "{id:'batch_size', type:'number', min:1, placeholder: 4}"}])
 
     def download(self, my):
         if not os.path.exists(DATA_PATH):
@@ -169,7 +169,7 @@ class PythonPlugin():
                     imsave(join(Gt_train, "train_{}.png").format(i), DistanceWithoutNormalise(gt))
         self.convert_to_tfRecords()
 
-    def train(self):
+    def train(self, my):
         TFRecord = TFRECORD_PATH
         N_FEATURES = 2
         WEIGHT_DECAY = 0.005
@@ -192,7 +192,6 @@ class PythonPlugin():
         SUMMARY = True
         S = SUMMARY
         N_EPOCH = my.config.epoch
-        PATH = DATA_PATH
         HEIGHT = 212
         WIDTH = 212
         SIZE = (HEIGHT, WIDTH)
@@ -204,19 +203,19 @@ class PythonPlugin():
 
         transform_list, transform_list_test = ListTransform(n_elastic=0)
 
-        DG_TRAIN = DataGenMulti(PATH, split='train', crop = CROP, size=(HEIGHT, WIDTH),
-                        transforms=transform_list, num="test", UNet=True, mean_file=None)
+        DG_TRAIN = DataGenMulti(DATA_PATH, split='train', crop = CROP, size=(HEIGHT, WIDTH),
+                        transforms=transform_list, num="train", UNet=True, mean_file=None)
 
         test_patient = ["test"]
         DG_TRAIN.SetPatient(test_patient)
         N_ITER_MAX = N_EPOCH * DG_TRAIN.length // BATCH_SIZE
 
-        DG_TEST  = DataGenMulti(PATH, split="test", crop = 1, size=(500, 500), num="test",
-                        transforms=transform_list_test, UNet=True, mean_file=MEAN_FILE)
-        DG_TEST.SetPatient(test_patient)
+        #DG_TEST  = DataGenMulti(DATA_PATH, split="test", crop = 1, size=(500, 500), num="test",
+        #                transforms=transform_list_test, UNet=True, mean_file=MEAN_FILE)
+        #DG_TEST.SetPatient(test_patient)
 
 
-        model = UNetDistance(TFRecord,    LEARNING_RATE=LEARNING_RATE,
+        model = UNetDistance(TFRecord,  LEARNING_RATE=LEARNING_RATE,
                                         BATCH_SIZE=BATCH_SIZE,
                                         IMAGE_SIZE=SIZE,
                                         NUM_CHANNELS=3,
@@ -232,7 +231,7 @@ class PythonPlugin():
                                         MEAN_FILE=MEAN_FILE,
                                         DROPOUT=DROPOUT)
 
-        model.train(DG_TEST, callback=self.step_callback)
+        model.train(DG_TRAIN, callback=self.step_callback)
         api.showStatus("Training finished.")
         api.alert('Traning done!')
 
