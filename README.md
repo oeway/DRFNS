@@ -20,6 +20,8 @@ Step 2: Choose a version and click install:
 
 In the [ImJoy web app](https://imjoy.io/#/app?w=DRFNS), expand the DRFNS-Lite plugin menu and click step by step or add then into the workflow.
 
+<img src="https://raw.githubusercontent.com/oeway/DRFNS-Lite/master/img/plugin-menu-screenshot.png" width="200"> <img src="https://raw.githubusercontent.com/oeway/DRFNS-Lite/master/img/workflow-screenshot.png" width="200">
+
 ## About DRFNS
 
 This is the description from the original repository:
