@@ -76,7 +76,7 @@ class PythonPlugin():
     def setup(self):
         print('setup in python')
         api.register(name="Download Data", run=self.download, ui=[{"download data":  {"id": 'url', "type": 'string', "placeholder": ''}}])
-        api.register(name="Preprocessing", run=self.DDSCreation,
+        api.register(name="Preprocessing", run=self.preprocess,
                     ui=[{"mu": "{id:'mu', type:'number', min:0.0, placeholder: 127.0}",
                          "sigma": "{id:'sigma', type:'number', min:0.0, placeholder: 100.0}",
                          "sigma2": "{id:'sigma2', type:'number', min:0.0, placeholder: 10.0}"}])
@@ -122,7 +122,7 @@ class PythonPlugin():
                     TYPE=TYPE, SPLIT=SPLIT)
         api.showStatus("tfRecords created.")
 
-    def preprocessing(self, my):
+    def preprocess(self, my):
         normalized = 0
         test = 10
         output = OUTPUT_PATH
