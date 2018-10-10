@@ -83,7 +83,7 @@ class PythonPlugin():
                          "sigma2": "{id:'sigma2', type:'number', min:0.0, placeholder: 10.0}"}])
         api.register(name="Training", run=self.train,
                     ui=['Training a Unet (Normalized)',
-                        {"epoch": "{id:'epoch', type:'number', min:1, placeholder: 100}",
+                        {"epoch": "{id:'epoch', type:'number', min:1, placeholder: 10}",
                          "batch_size": "{id:'batch_size', type:'number', min:1, placeholder: 4}"}])
 
     def download(self, my):
