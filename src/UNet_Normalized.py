@@ -13,7 +13,7 @@ from Nets.DataReadDecode import read_and_decode
 from skimage.io import imsave
 from os.path import join
 import os
-from utils import CheckOrCreate
+from Utils import CheckOrCreate
 class UNetDistance(UNetBatchNorm):
     def __init__(
         self,
@@ -65,7 +65,7 @@ class UNetDistance(UNetBatchNorm):
         self.sess = tf.InteractiveSession()
 
         self.sess.as_default()
-        
+
         self.var_to_reg = []
         self.var_to_sum = []
         self.TF_RECORDS = TF_RECORDS
@@ -82,8 +82,8 @@ class UNetDistance(UNetBatchNorm):
         self.filename_queue = tf.train.string_input_producer(
                               [tfrecords_filename], num_epochs=10)
         with tf.device('/cpu:0'):
-            self.image, self.pre_anno = read_and_decode(self.filename_queue, 
-                                                          self.IMAGE_SIZE[0], 
+            self.image, self.pre_anno = read_and_decode(self.filename_queue,
+                                                          self.IMAGE_SIZE[0],
                                                           self.IMAGE_SIZE[1],
                                                           self.BATCH_SIZE,
                                                           self.N_THREADS,
@@ -97,14 +97,14 @@ class UNetDistance(UNetBatchNorm):
         else:
             self.images_queue = self.image
         self.image_PH = tf.placeholder_with_default(self.images_queue, shape=[None,
-                                                                              None, 
+                                                                              None,
                                                                               None,
                                                                               3])
         return self.image_PH
     def label_node_f(self):
         self.labels_queue = self.annotation
         self.labels_PH = tf.placeholder_with_default(self.labels_queue, shape=[None,
-                                                                          None, 
+                                                                          None,
                                                                           None,
                                                                           1])
 
@@ -248,7 +248,7 @@ class UNetDistance(UNetBatchNorm):
         self.relu2_1 = self.relu_layer_f(self.conv2_1, self.conv2_1biases, "conv2_1/")
 
         self.conv2_2 = self.conv_layer_f(self.relu2_1, self.conv2_2weights, "conv2_2/")
-        self.relu2_2 = self.relu_layer_f(self.conv2_2, self.conv2_2biases, "conv2_2/")        
+        self.relu2_2 = self.relu_layer_f(self.conv2_2, self.conv2_2biases, "conv2_2/")
 
 
         self.pool2_3 = self.max_pool(self.relu2_2, name="pool2_3")
@@ -258,7 +258,7 @@ class UNetDistance(UNetBatchNorm):
         self.relu3_1 = self.relu_layer_f(self.conv3_1, self.conv3_1biases, "conv3_1/")
 
         self.conv3_2 = self.conv_layer_f(self.relu3_1, self.conv3_2weights, "conv3_2/")
-        self.relu3_2 = self.relu_layer_f(self.conv3_2, self.conv3_2biases, "conv3_2/")     
+        self.relu3_2 = self.relu_layer_f(self.conv3_2, self.conv3_2biases, "conv3_2/")
 
 
         self.pool3_4 = self.max_pool(self.relu3_2, name="pool3_4")
@@ -346,14 +346,14 @@ class UNetDistance(UNetBatchNorm):
 
         error = mean_squared_error(labels.flatten(), predictions.flatten())
 
-        return error 
+        return error
 
     def Validation(self, DG_TEST, step):
         if DG_TEST is None:
             print "no validation"
         else:
             n_test = DG_TEST.length
-            n_batch = int(np.ceil(float(n_test) / self.BATCH_SIZE)) 
+            n_batch = int(np.ceil(float(n_test) / self.BATCH_SIZE))
 
             l = 0.
             for i in range(n_batch):
@@ -362,7 +362,7 @@ class UNetDistance(UNetBatchNorm):
                 feed_dict = {self.input_node: Xval,
                              self.train_labels_node: Yval,
                              self.is_training: False}
-                l_tmp, pred, s = self.sess.run([self.loss, 
+                l_tmp, pred, s = self.sess.run([self.loss,
                                                 self.predictions,
                                                 self.merged_summary],
                                                 feed_dict=feed_dict)
@@ -380,7 +380,7 @@ class UNetDistance(UNetBatchNorm):
                     new_pred = pred.copy()
                     new_pred[new_pred < 0] = 0
                     imsave(pred2_name, (new_pred[j] * 255 ).astype(np.uint8))
-                 
+
                     GT = Yval[j, :, :, 0].copy()
                     GT[GT > 0] = 255
                     imsave(bin_name, GT.astype(np.uint8))
@@ -389,12 +389,12 @@ class UNetDistance(UNetBatchNorm):
 
             summary = tf.Summary()
             summary.value.add(tag="TestMan/Loss", simple_value=l)
-            self.summary_test_writer.add_summary(summary, step) 
-            self.summary_test_writer.add_summary(s, step) 
+            self.summary_test_writer.add_summary(summary, step)
+            self.summary_test_writer.add_summary(s, step)
             print('  Validation loss: %.1f' % l)
             self.saver.save(self.sess, self.LOG + '/' + "model.ckpt", step)
 
-    def train(self, DGTest):
+    def train(self, DGTest, callback=None):
         epoch = self.STEPS * self.BATCH_SIZE // self.N_EPOCH
         self.Saver()
         trainable_var = tf.trainable_variables()
@@ -407,8 +407,8 @@ class UNetDistance(UNetBatchNorm):
         self.regularize_model()
 
         self.Saver()
-        
-        
+
+
 
         self.summary_test_writer = tf.summary.FileWriter(self.LOG + '/test',
                                             graph=self.sess.graph)
@@ -422,7 +422,7 @@ class UNetDistance(UNetBatchNorm):
         threads = tf.train.start_queue_runners(coord=coord)
         begin = int(self.global_step.eval())
         print "begin", begin
-        for step in range(begin, steps + begin):  
+        for step in range(begin, steps + begin):
             # self.optimizer is replaced by self.training_op for the exponential moving decay
             _, l, lr, predictions, batch_labels, s = self.sess.run(
                         [self.training_op, self.loss, self.learning_rate,
@@ -432,11 +432,14 @@ class UNetDistance(UNetBatchNorm):
             if step % self.N_PRINT == 0:
                 i = datetime.now()
                 print i.strftime('%Y/%m/%d %H:%M:%S: \n ')
-                self.summary_writer.add_summary(s, step)                
+                self.summary_writer.add_summary(s, step)
                 print('  Step %d of %d' % (step, steps))
                 print('  Learning rate: %.5f \n') % lr
                 print('  Mini-batch loss: %.5f \n ') % l
                 print('  Max value: %.5f \n ') % np.max(predictions)
+                if callback is not None:
+                    report = {'step': step, 'totalSteps': steps, 'lr': lr, 'maxValue': p.max(predictions)}
+                    callback(report)
                 self.Validation(DGTest, step)
         coord.request_stop()
         coord.join(threads)
@@ -493,7 +496,7 @@ if __name__== "__main__":
     N_FEATURES = options.n_features
     WEIGHT_DECAY = options.weight_decay
     DROPOUT = options.dropout
-    MEAN_FILE = options.mean_file 
+    MEAN_FILE = options.mean_file
     N_THREADS = options.THREADS
 
 
@@ -505,12 +508,12 @@ if __name__== "__main__":
         lr_str = "{0:.8f}".format(LEARNING_RATE).rstrip("0")
     SAVE_DIR = options.log + "/" + "{}".format(N_FEATURES) + "_" +"{0:.8f}".format(WEIGHT_DECAY).rstrip("0") + "_" + lr_str
 
-    
-    
-    HEIGHT = 224 
+
+
+    HEIGHT = 224
     WIDTH = 224
-    
-    
+
+
     BATCH_SIZE = options.bs
     LRSTEP = "4epoch"
     SUMMARY = True
@@ -525,7 +528,7 @@ if __name__== "__main__":
     SIZE = (HEIGHT, WIDTH)
 
     N_TRAIN_SAVE = 10
- 
+
     CROP = 4
 
 
@@ -538,7 +541,7 @@ if __name__== "__main__":
     DG_TRAIN.SetPatient(test_patient)
     N_ITER_MAX = N_EPOCH * DG_TRAIN.length // BATCH_SIZE
 
-    DG_TEST  = DataGenMulti(PATH, split="test", crop = 1, size=(500, 500), num="test", 
+    DG_TEST  = DataGenMulti(PATH, split="test", crop = 1, size=(500, 500), num="test",
                        transforms=transform_list_test, UNet=True, mean_file=MEAN_FILE)
     DG_TEST.SetPatient(test_patient)
 

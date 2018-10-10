@@ -11,7 +11,7 @@ from optparse import OptionParser
 import numpy as np
 import matplotlib.pylab as plt
 from scipy.ndimage.morphology import distance_transform_cdt
-from utils import CheckOrCreate
+from Utils import CheckOrCreate
 from skimage.io import imsave
 from skimage.measure import label, regionprops
 from skimage.morphology import dilation, disk
@@ -139,7 +139,7 @@ if __name__ == '__main__':
     for i in range(DG.length):
         key = DG.NextKeyRandList(0)
         img, gt = DG[key]
-        gt_lab = gt.copy()  
+        gt_lab = gt.copy()
         gt = label(gt)
         gt = dilation(gt, disk(3))
         GT_noise = AddNoise(gt, options.mu, options.sigma, options.sigma2, 1, 255)
@@ -150,7 +150,7 @@ if __name__ == '__main__':
                 imsave(join(Gt_test, "test_{}.png").format(i), DistanceBinNormalise(gt))
             else:
                 imsave(join(Gt_test, "test_{}.png").format(i), DistanceWithoutNormalise(gt))
-        else:   
+        else:
             imsave(join(Slide_train, "train_{}.png").format(i), GT_noise)
             if options.normalized == 0:
                 imsave(join(Gt_train, "train_{}.png").format(i), DistanceBinNormalise(gt))

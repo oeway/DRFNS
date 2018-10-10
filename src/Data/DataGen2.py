@@ -54,7 +54,7 @@ def OpenReadProcess(img_p, lbl_p, DG, f, crop_n):
     lbl = LoadGTBatch(lbl_p)
     img_lbl = (img, lbl)
     img_lbl = DG.Process(img_lbl, f, crop_n)
-    
+
     return img_lbl
 
 def LoadGTBatch(path, normalize=True):
@@ -81,8 +81,8 @@ class DataGen(object):
     """
     def __init__(self, path, crop=1, size=None, transforms=None,
                  split="train", leave_out=1, seed_=None, name="optionnal",
-                 img_format="RGB", UNet=False, N_JOBS=1, 
-                 perc_trans=1., return_path=False, num="141549", 
+                 img_format="RGB", UNet=False, N_JOBS=1,
+                 perc_trans=1., return_path=False, num="141549",
                  mean_file=None):
 
         self.path = path
@@ -100,7 +100,7 @@ class DataGen(object):
         self.SetPatient(num)
         self.img_format = img_format
 
-        
+
         self.return_path = return_path
 
 
@@ -150,11 +150,11 @@ class DataGen(object):
                 "Value exceed number of patients available for {}ing.".format(self.split))
         numero = self.patients_iter[key[0]]
         n_patient = len(self.patient_img[numero])
-        
+
         if key[1] > n_patient:
             raise Exception(
                 "Patient {} doesn't have {} possible images.".format(self.patients_iter[key[0]], key[1]))
-        
+
         if key[2] > self.n_trans:
             raise Exception(
                 "Value exceed number of possible transformation for {}ing".format(self.split))
@@ -164,7 +164,7 @@ class DataGen(object):
 
         img_path = self.patient_img[numero][key[1]]
         lbl_path = img_path.replace("Slide", "GT").replace(".png", ".nii.gz")
-        
+
         img_lbl_Mwgt = ()
         img_lbl_Mwgt += (self.LoadImage(img_path), )
         img_lbl_Mwgt += (self.LoadGT(lbl_path), )
@@ -175,8 +175,8 @@ class DataGen(object):
         img_lbl_Mwgt = self.Process(img_lbl_Mwgt, f, crop_n)
 
         if self.return_path:
-            img_lbl_Mwgt += (img_path,)                    
-        
+            img_lbl_Mwgt += (img_path,)
+
         return img_lbl_Mwgt
 
 
@@ -197,11 +197,11 @@ class DataGen(object):
                 "Value exceed number of patients available for {}ing.".format(self.split))
         numero = self.patients_iter[key[0]]
         n_patient = len(self.patient_img[numero])
-        
+
         if key[1] > n_patient:
             raise Exception(
                 "Patient {} doesn't have {} possible images.".format(self.patients_iter[key[0]], key[1]))
-        
+
         if key[2] > self.n_trans:
             raise Exception(
                 "Value exceed number of possible transformation for {}ing".format(self.split))
@@ -231,7 +231,7 @@ class DataGen(object):
 
         if self.UNet:
             CheckNumberForUnet(img_lbl_Mwgt[0].shape[0])
-            img_lbl_Mwgt = self.ReduceDimUNet(*img_lbl_Mwgt)    
+            img_lbl_Mwgt = self.ReduceDimUNet(*img_lbl_Mwgt)
 
         if self.Mean:
             img_lbl_Mwgt = self.SubtractMean(*img_lbl_Mwgt)
@@ -318,8 +318,8 @@ class DataGen(object):
             for i in range(x_step, x + 1, x_step):
                 j_old = 0
                 for j in range(y_step, y + 1, y_step):
-                    if number == quarter: 
-                        
+                    if number == quarter:
+
                         if self.UNet:
                             n = 92
                             res += (iter[(i_old):(i+2*n), (j_old):(j+2*n)],)
@@ -372,7 +372,7 @@ class DataGen(object):
 
     def ReduceDimUNet(self, *kargs):
         """
-        If image has been augmented for the UNet processing. 
+        If image has been augmented for the UNet processing.
         Well this reduces it back. Only applies to first element of
         iterable.
         """
@@ -395,7 +395,7 @@ class DataGen(object):
         for i in range(1, len(kargs)):
             res += (kargs[i], )
         return res
-        
+
     def Unet_cut(self, *kargs):
         """
         Applies UNet augmentation for borders to iterable.
@@ -509,7 +509,7 @@ class DataGen(object):
             self.length = np.sum(images_test) * self.crop * self.n_trans
             self.patients_iter = test_patient
 
-        self.SetRandomList() ## needed? 
+        self.SetRandomList() ## needed?
 
 
     def GeneratePossibleKeys(self):
@@ -520,7 +520,7 @@ class DataGen(object):
 
         AllPossibleKeys = []
         i = 0
-        
+
         for num in self.patients_iter:
             lists = ([i],)
             i += 1
@@ -528,7 +528,7 @@ class DataGen(object):
             lists += (range(nber_per_patient),)
             lists += (np.random.randint(0, len(self.transforms), self.n_trans),)
             lists += (range(self.crop),)
-            
+
             AllPossibleKeys += list(itertools.product(*lists))
 
         return AllPossibleKeys
@@ -552,7 +552,7 @@ class DataGen(object):
         if not hasattr(self, "RandomList"):
             self.SetRandomList()
             self.key_iter = 0
-        else:  
+        else:
             self.key_iter += 1
         if self.key_iter == self.length:
             self.key_iter = 0
@@ -617,7 +617,7 @@ class DataGen(object):
         self.SortPatients()
 
     def Batch(self, key, batch_size):
-        """ 
+        """
         Loading images in a multithreaded way to increase batch loads.
         """
         if self.UNet:

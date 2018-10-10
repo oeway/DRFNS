@@ -1,0 +1,246 @@
+﻿
+<docs lang="markdown">
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1175282.svg)](https://doi.org/10.5281/zenodo.1175282)
+
+This is a fork of [DRFNS](https://github.com/PeterJackNaylor/DRFNS) for demonstrating how deep learning models can be easily deployed with [ImJoy.io](https://imjoy.io)
+
+[Run this code with ImJoy]()
+
+
+# Deep Regression For Nuclei Segmentation
+
+In this repository, we've implemented the code resulting in the submitted paper "Segmentation of Nuclei in Histopathology Images by deep regression of the distance map." in TMI, by P. Naylor, M. Laé, F. Reyal and T. Walter. The code in this repository is made out of nextflow for pipeline management. For more information about nextflow please refer to [Nextflow's documentation](https://www.nextflow.io/). Each process of this pipeline is made out of python and called via nextflow. Nextflow was very handy to take advantage of a cluster with multi-queues, in particular for a pipeline using CPU's and GPU's.
+
+
+## Description
+We tackle the task of nuclei segmentation within histopathology tissue. Many methods have been proposed in the past but relatively few of them try to handle the wide hetereogenity that one can typically encounter with such data. As is the current trend, we apply state of the art algorithm technics based on CNN but also our novel nuclei segmentation framework. We compare each method with two metrics, the first pixel based and the second objected based. We elaborate a benchmark of fully convolutionnal algorithm applied to these datasets.  In particular we compare ourselves to [\[Neeraj et al\]](https://nucleisegmentationbenchmark.weebly.com/) and show that our deep regression method outperforms previous state of the art method for separating cluttered objects.
+
+</docs>
+
+<config lang="json">
+{
+  "name": "DRFNS-Lite",
+  "mode": "pyworker",
+  "version": "0.1.0",
+  "api_version": "0.1.1",
+  "description": ".",
+  "tags": ["CPU", "GPU"],
+  "ui": "UI for this plugin",
+  "inputs": null,
+  "outputs": null,
+  "flags": [],
+  "icon": null,
+  "env": ["conda create -n DRFNS2 python=2.7", "git clone https://github.com/oeway/DRFNS-Lite.git"],
+  "requirements":{"CPU": ["scikit-image", "scikit-learn", "numpy", "tensorflow", "progressbar", "nibabel", "joblib", "opencv-python"],
+                  "GPU": ["scikit-image", "scikit-learn", "numpy", "tensorflow-gpu", "progressbar", "nibabel", "joblib", "opencv-python"]
+  },
+  "dependencies": []
+}
+</config>
+
+<script lang="python">
+import sys
+import os
+import requests
+import shutil
+import zipfile
+import numpy as np
+
+os.chdir('./DRFNS-Lite/src')
+import matplotlib as mpl
+mpl.use('Agg')
+
+from Data.DataGenClass import DataGenMulti
+from Data.CreateTFRecords import CreateTFRecord
+from Data.ImageTransform import ListTransform
+from UNet_Normalized import UNetDistance
+from os.path import join
+from Utils import CheckOrCreate
+from skimage.io import imsave
+from skimage.measure import label
+from skimage.morphology import reconstruction, dilation, erosion, disk, diamond, square
+from skimage import img_as_ubyte
+from DDSCreation import *
+from Records import *
+
+DATA_FOLDER = '../datafolder/'
+DATA_PATH = os.path.join(DATA_FOLDER, 'TNBC_NucleiSegmentation')
+OUTPUT_PATH = os.path.join(DATA_FOLDER, 'UNNormalized')
+TFRECORD_PATH = OUTPUT_PATH + '.tfrecords'
+
+if not os.path.exists(DATA_FOLDER):
+    os.makedirs(DATA_FOLDER)
+
+
+class PythonPlugin():
+    def setup(self):
+        print('setup in python')
+        api.register(name="Download Data", run=self.download, ui=[{"download data":  {"id": 'url', "type": 'string', "placeholder": ''}}])
+        api.register(name="Preprocessing", run=self.DDSCreation,
+                    ui=[{"mu": "{id:'mu', type:'number', min:0.0, placeholder: 127.0}",
+                         "sigma": "{id:'sigma', type:'number', min:0.0, placeholder: 100.0}",
+                         "sigma2": "{id:'sigma2', type:'number', min:0.0, placeholder: 10.0}"}])
+        api.register(name="Training", run=self.train,
+                    ui=['Training a Unet (Normalized)',
+                        {"epoch": "{id:'mu', type:'number', min:1, placeholder: 100}",
+                         "batch_size": "{id:'sigma', type:'number', min:1, placeholder: 4}"}])
+
+    def download(self, my):
+        if not os.path.exists(DATA_PATH):
+            api.showStatus("downloading data file")
+            url = my.config.url if my.config.url != '' else 'https://zenodo.org/record/1175282/files/TNBC_NucleiSegmentation.zip'
+            r = requests.get(url, allow_redirects=True)
+            name_zip = DATA_PATH + '.zip'
+            open(name_zip, 'wb').write(r.content)
+            api.showStatus("unzipping data file")
+            #shutil.unpack_archive(name_zip)
+            zip_ref = zipfile.ZipFile(name_zip, 'r')
+            zip_ref.extractall(datafolder)
+            zip_ref.close()
+            os.remove(name_zip)
+            api.showStatus("data file saved.")
+        else:
+            api.showStatus("data file already downloaded.")
+
+    def convert_to_tfRecords(self):
+        OUTNAME = TFRECORD_PATH
+        PATH = OUTPUT_PATH
+        CROP = 4
+        SIZE = (212, 212)
+        SPLIT = "train"
+        transform_list, transform_list_test = ListTransform()
+        TRANSFORM_LIST = transform_list
+        UNET = True
+        SEED = 42
+        TEST_PATIENT = ["test"]
+        N_EPOCH = 20
+        TYPE = "JUST_READ"
+        api.showStatus("creating tfRecords...")
+        CreateTFRecord(OUTNAME, PATH, CROP, SIZE,
+                    TRANSFORM_LIST, UNET, None,
+                    SEED, TEST_PATIENT, N_EPOCH,
+                    TYPE=TYPE, SPLIT=SPLIT)
+        api.showStatus("tfRecords created.")
+
+    def preprocessing(self, my):
+        normalized = 0
+        test = 10
+        output = OUTPUT_PATH
+        mu = my.config.mu
+        sigma = my.config.sigma
+        sigma2 = my.config.sigma2
+        path = DATA_PATH
+        transf, transf_test = ListTransform()
+        api.showStatus("preprocessing...")
+        size = (512, 512)
+        crop = 1
+        DG = DataGenMulti(path, crop=crop, size=size, transforms=transf_test,
+                    split="train", num="", seed_=42)
+        Slide_train = join(output, "Slide_train")
+        CheckOrCreate(Slide_train)
+        Gt_train = join(output, "GT_train")
+        CheckOrCreate(Gt_train)
+
+        Slide_test = join(output, "Slide_test")
+        CheckOrCreate(Slide_test)
+        Gt_test = join(output, "GT_test")
+        CheckOrCreate(Gt_test)
+
+        for i in range(DG.length):
+            key = DG.NextKeyRandList(0)
+            img, gt = DG[key]
+            gt_lab = gt.copy()
+            gt = label(gt)
+            gt = dilation(gt, disk(3))
+            GT_noise = AddNoise(gt, mu, sigma, sigma2, 1, 255)
+            GT_noise = Noise(GT_noise, 5)
+            if test > i:
+                imsave(join(Slide_test, "test_{}.png").format(i), GT_noise)
+                if normalized == 0:
+                    imsave(join(Gt_test, "test_{}.png").format(i), DistanceBinNormalise(gt))
+                else:
+                    imsave(join(Gt_test, "test_{}.png").format(i), DistanceWithoutNormalise(gt))
+            else:
+                imsave(join(Slide_train, "train_{}.png").format(i), GT_noise)
+                if normalized == 0:
+                    imsave(join(Gt_train, "train_{}.png").format(i), DistanceBinNormalise(gt))
+                else:
+                    imsave(join(Gt_train, "train_{}.png").format(i), DistanceWithoutNormalise(gt))
+        self.convert_to_tfRecords()
+
+    def train(self):
+        TFRecord = TFRECORD_PATH
+        N_FEATURES = 2
+        WEIGHT_DECAY = 0.005
+        DROPOUT =  0.5
+        MEAN_FILE = None
+        N_THREADS =  50
+
+        LEARNING_RATE = 0.001
+        if int(str(LEARNING_RATE)[-1]) > 7:
+            lr_str = "1E-{}".format(str(LEARNING_RATE)[-1])
+        else:
+            lr_str = "{0:.8f}".format(LEARNING_RATE).rstrip("0")
+        SAVE_DIR =  "./" + "{}".format(N_FEATURES) + "_" +"{0:.8f}".format(WEIGHT_DECAY).rstrip("0") + "_" + lr_str
+
+        HEIGHT = 224
+        WIDTH = 224
+
+        BATCH_SIZE = my.config.batch_size
+        LRSTEP = "4epoch"
+        SUMMARY = True
+        S = SUMMARY
+        N_EPOCH = my.config.epoch
+        PATH = DATA_PATH
+        HEIGHT = 212
+        WIDTH = 212
+        SIZE = (HEIGHT, WIDTH)
+        N_TRAIN_SAVE = 10
+        CROP = 4
+
+        api.showStatus("training...")
+        api.showProgress(0)
+
+        transform_list, transform_list_test = ListTransform(n_elastic=0)
+
+        DG_TRAIN = DataGenMulti(PATH, split='train', crop = CROP, size=(HEIGHT, WIDTH),
+                        transforms=transform_list, num="test", UNet=True, mean_file=None)
+
+        test_patient = ["test"]
+        DG_TRAIN.SetPatient(test_patient)
+        N_ITER_MAX = N_EPOCH * DG_TRAIN.length // BATCH_SIZE
+
+        DG_TEST  = DataGenMulti(PATH, split="test", crop = 1, size=(500, 500), num="test",
+                        transforms=transform_list_test, UNet=True, mean_file=MEAN_FILE)
+        DG_TEST.SetPatient(test_patient)
+
+
+        model = UNetDistance(TFRecord,    LEARNING_RATE=LEARNING_RATE,
+                                        BATCH_SIZE=BATCH_SIZE,
+                                        IMAGE_SIZE=SIZE,
+                                        NUM_CHANNELS=3,
+                                        STEPS=N_ITER_MAX,
+                                        LRSTEP=LRSTEP,
+                                        N_PRINT=N_TRAIN_SAVE,
+                                        LOG=SAVE_DIR,
+                                        SEED=42,
+                                        WEIGHT_DECAY=WEIGHT_DECAY,
+                                        N_FEATURES=N_FEATURES,
+                                        N_EPOCH=N_EPOCH,
+                                        N_THREADS=N_THREADS,
+                                        MEAN_FILE=MEAN_FILE,
+                                        DROPOUT=DROPOUT)
+
+        model.train(DG_TEST, callback=self.step_callback)
+        api.showStatus("Training finished.")
+        api.alert('Traning done!')
+
+    def step_callback(self, report):
+        api.showStatus(str(report))
+        api.showProgress(report['step']/report['totalSteps']*100)
+
+    def run(self, my):
+        api.alert('Please run this plugin step by step or using a workflow.')
+
+api.export(PythonPlugin())
+</script>

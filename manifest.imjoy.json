@@ -1,0 +1,27 @@
+{
+ "name": "ImJoy Repository",
+ "description": "",
+ "version": "0.2.0",
+ "uri_root": "https://raw.githubusercontent.com/oeway/DRFNS-Lite/master/repository",
+ "plugins": [
+   {
+     "name": "DRFNS-Lite",
+     "mode": "pyworker",
+     "version": "0.1.0",
+     "api_version": "0.1.1",
+     "description": ".",
+     "tags": ["CPU", "GPU"],
+     "ui": "UI for this plugin",
+     "inputs": null,
+     "outputs": null,
+     "flags": [],
+     "icon": null,
+     "env": ["conda create -n DRFNS2 python=2.7", "git clone https://github.com/oeway/DRFNS-Lite.git"],
+     "requirements":{"CPU": ["scikit-image", "scikit-learn", "numpy", "tensorflow", "progressbar", "nibabel", "joblib", "opencv-python"],
+                     "GPU": ["scikit-image", "scikit-learn", "numpy", "tensorflow-gpu", "progressbar", "nibabel", "joblib", "opencv-python"]
+     },
+     "dependencies": [],
+     "uri": "DRFNS-Lite.imjoy.html"
+   }
+ ]
+}
