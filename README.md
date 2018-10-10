@@ -1,6 +1,6 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1175282.svg)](https://doi.org/10.5281/zenodo.1175282)
 
-This is a fork of [DRFNS](https://github.com/PeterJackNaylor/DRFNS) for demonstrating how deep learning models can be easily deployed with [ImJoy.io](https://imjoy.io)
+This is a fork of [DRFNS](https://github.com/PeterJackNaylor/DRFNS) to demonstrate how deep learning models can be easily deployed with [ImJoy.io](https://imjoy.io).
 
 This is modified version only support training on synthetic data, for real data, please refer to the [original repository](https://github.com/PeterJackNaylor/DRFNS).
 
