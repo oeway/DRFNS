@@ -77,7 +77,8 @@ class PythonPlugin():
         print('setup in python')
         api.register(name="Download Data", run=self.download, ui=[{"download data":  {"id": 'url', "type": 'string', "placeholder": ''}}])
         api.register(name="Preprocessing", run=self.preprocess,
-                    ui=[{"mu": "{id:'mu', type:'number', min:0.0, placeholder: 127.0}",
+                    ui=['Preprocessing: ',
+                        {"mu": "{id:'mu', type:'number', min:0.0, placeholder: 127.0}",
                          "sigma": "{id:'sigma', type:'number', min:0.0, placeholder: 100.0}",
                          "sigma2": "{id:'sigma2', type:'number', min:0.0, placeholder: 10.0}"}])
         api.register(name="Training", run=self.train,
@@ -95,7 +96,7 @@ class PythonPlugin():
             api.showStatus("unzipping data file")
             #shutil.unpack_archive(name_zip)
             zip_ref = zipfile.ZipFile(name_zip, 'r')
-            zip_ref.extractall(datafolder)
+            zip_ref.extractall(DATA_FOLDER)
             zip_ref.close()
             os.remove(name_zip)
             api.showStatus("data file saved.")
