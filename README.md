@@ -7,14 +7,14 @@ This is modified version only support training on synthetic data, for real data,
 # Run DRFNS-Lite with ImJoy.io
 
 ## Setup
-
-Step 1: Install ImJoy Plugin Engine: https://github.com/oeway/ImJoy-Python/releases
-
-Step 2: Choose a version and click install:
+Choose a version and click install:
 
 [DRFNS-Lite (CPU Version)](https://imjoy.io/#/app?w=DRFNS&plugin=https://raw.githubusercontent.com/oeway/DRFNS-Lite/master/DRFNS-Lite.imjoy.html#CPU)
 
 [DRFNS-Lite (GPU Version)](https://imjoy.io/#/app?w=DRFNS&plugin=https://raw.githubusercontent.com/oeway/DRFNS-Lite/master/DRFNS-Lite.imjoy.html#GPU)
+
+Once installed Click `DRFNS-Lite` in the plugin menu and follow the instructions in the dialog to install the Python Plugin Engine.
+
 
 ## Usage
 
