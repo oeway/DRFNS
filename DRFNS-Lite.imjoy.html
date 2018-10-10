@@ -214,7 +214,7 @@ class PythonPlugin():
         #                transforms=transform_list_test, UNet=True, mean_file=MEAN_FILE)
         #DG_TEST.SetPatient(test_patient)
 
-        api.showStatus("start training...")
+
         model = UNetDistance(TFRecord,  LEARNING_RATE=LEARNING_RATE,
                                         BATCH_SIZE=BATCH_SIZE,
                                         IMAGE_SIZE=SIZE,
@@ -230,7 +230,7 @@ class PythonPlugin():
                                         N_THREADS=N_THREADS,
                                         MEAN_FILE=MEAN_FILE,
                                         DROPOUT=DROPOUT)
-
+        api.showStatus("start training...")
         model.train(DG_TRAIN, step_callback=self.step_callback)
         api.showStatus("Training finished.")
         api.alert('Traning done!')
