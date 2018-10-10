@@ -55,6 +55,8 @@ class UNetDistance(UNetBatchNorm):
         self.N_EPOCH = N_EPOCH
         self.N_THREADS = N_THREADS
         self.DROPOUT = DROPOUT
+        self.validation_loss = -1
+        self.training_loss = -1
         if MEAN_FILE is not None:
             MEAN_ARRAY = tf.constant(np.load(MEAN_FILE), dtype=tf.float32) # (3)
             self.MEAN_ARRAY = tf.reshape(MEAN_ARRAY, [1, 1, 3])
@@ -368,12 +370,12 @@ class UNetDistance(UNetBatchNorm):
                                                 feed_dict=feed_dict)
                 l += l_tmp
                 for j in range(self.BATCH_SIZE):
-                    CheckOrCreate('step_{}'.format(step))
-                    xval_name = join('step_{}'.format(step), "X_val_{}_{}.png".format(i, j))
-                    yval_name = join('step_{}'.format(step), "Y_val_{}_{}.png".format(i, j))
-                    pred_name = join('step_{}'.format(step), "pred_{}_{}.png".format(i, j))
-                    pred2_name = join('step_{}'.format(step), "pred2_{}_{}.png".format(i, j))
-                    bin_name = join('step_{}'.format(step), "Y_bin_{}_{}.png".format(i, j))
+                    CheckOrCreate(join(self.LOG, 'step_{}'.format(step)))
+                    xval_name = join(self.LOG, 'step_{}'.format(step), "X_val_{}_{}.png".format(i, j))
+                    yval_name = join(self.LOG, 'step_{}'.format(step), "Y_val_{}_{}.png".format(i, j))
+                    pred_name = join(self.LOG, 'step_{}'.format(step), "pred_{}_{}.png".format(i, j))
+                    pred2_name = join(self.LOG, 'step_{}'.format(step), "pred2_{}_{}.png".format(i, j))
+                    bin_name = join(self.LOG, 'step_{}'.format(step), "Y_bin_{}_{}.png".format(i, j))
                     imsave(xval_name, (Xval[j, 92:-92, 92:-92]).astype(np.uint8))
                     imsave(yval_name, (Yval[j, :, :, 0] * 255).astype(np.uint8))
                     imsave(pred_name, (pred[j] * 255 ).astype(np.uint8))
@@ -386,7 +388,7 @@ class UNetDistance(UNetBatchNorm):
                     imsave(bin_name, GT.astype(np.uint8))
 
             l = l / n_batch
-
+            self.validation_loss = l
             summary = tf.Summary()
             summary.value.add(tag="TestMan/Loss", simple_value=l)
             self.summary_test_writer.add_summary(summary, step)
@@ -394,7 +396,7 @@ class UNetDistance(UNetBatchNorm):
             print('  Validation loss: %.1f' % l)
             self.saver.save(self.sess, self.LOG + '/' + "model.ckpt", step)
 
-    def train(self, DGTest, callback=None):
+    def train(self, DGTest, step_callback=None):
         epoch = self.STEPS * self.BATCH_SIZE // self.N_EPOCH
         self.Saver()
         trainable_var = tf.trainable_variables()
@@ -429,6 +431,11 @@ class UNetDistance(UNetBatchNorm):
                          self.train_prediction, self.train_labels_node,
                          self.merged_summary])
 
+            self.training_loss = l
+            if step_callback is not None:
+                report = {'step': step, 'totalSteps': steps, 'lr': lr, 'maxValue': np.max(predictions), 'traningLoss': self.training_loss, 'validationLoss': self.validation_loss}
+                step_callback(report)
+
             if step % self.N_PRINT == 0:
                 i = datetime.now()
                 print i.strftime('%Y/%m/%d %H:%M:%S: \n ')
@@ -437,10 +444,10 @@ class UNetDistance(UNetBatchNorm):
                 print('  Learning rate: %.5f \n') % lr
                 print('  Mini-batch loss: %.5f \n ') % l
                 print('  Max value: %.5f \n ') % np.max(predictions)
-                if callback is not None:
-                    report = {'step': step, 'totalSteps': steps, 'lr': lr, 'maxValue': np.max(predictions)}
-                    callback(report)
                 self.Validation(DGTest, step)
+
+
+
         coord.request_stop()
         coord.join(threads)
     def predict(self, tensor):

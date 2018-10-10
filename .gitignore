@@ -3,4 +3,4 @@ __MACOSX
 *.pyc
 __pycache__
 *.tfrecords
-
+datafolder

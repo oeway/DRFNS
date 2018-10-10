@@ -182,7 +182,7 @@ class PythonPlugin():
             lr_str = "1E-{}".format(str(LEARNING_RATE)[-1])
         else:
             lr_str = "{0:.8f}".format(LEARNING_RATE).rstrip("0")
-        SAVE_DIR =  "./" + "{}".format(N_FEATURES) + "_" +"{0:.8f}".format(WEIGHT_DECAY).rstrip("0") + "_" + lr_str
+        SAVE_DIR =  os.path.join(DATA_FOLDER, 'log', "{}".format(N_FEATURES) + "_" +"{0:.8f}".format(WEIGHT_DECAY).rstrip("0") + "_" + lr_str)
 
         HEIGHT = 224
         WIDTH = 224
@@ -198,7 +198,7 @@ class PythonPlugin():
         N_TRAIN_SAVE = 10
         CROP = 4
 
-        api.showStatus("training...")
+        api.showStatus("loading data...")
         api.showProgress(0)
 
         transform_list, transform_list_test = ListTransform(n_elastic=0)
@@ -214,7 +214,7 @@ class PythonPlugin():
         #                transforms=transform_list_test, UNet=True, mean_file=MEAN_FILE)
         #DG_TEST.SetPatient(test_patient)
 
-
+        api.showStatus("start training...")
         model = UNetDistance(TFRecord,  LEARNING_RATE=LEARNING_RATE,
                                         BATCH_SIZE=BATCH_SIZE,
                                         IMAGE_SIZE=SIZE,
@@ -231,11 +231,12 @@ class PythonPlugin():
                                         MEAN_FILE=MEAN_FILE,
                                         DROPOUT=DROPOUT)
 
-        model.train(DG_TRAIN, callback=self.step_callback)
+        model.train(DG_TRAIN, step_callback=self.step_callback)
         api.showStatus("Training finished.")
         api.alert('Traning done!')
 
     def step_callback(self, report):
+        print(report)
         api.showStatus(str(report))
         api.showProgress(report['step']/report['totalSteps']*100)
 
