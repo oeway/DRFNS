@@ -2,7 +2,7 @@
 
 This is a fork of [DRFNS](https://github.com/PeterJackNaylor/DRFNS) to demonstrate how deep learning models can be easily deployed with [ImJoy.io](https://imjoy.io).
 
-This is modified version only support training on synthetic data, for real data, please refer to the [original repository](https://github.com/PeterJackNaylor/DRFNS).
+This modified version only support training on synthetic data, for real data, please refer to the [original repository](https://github.com/PeterJackNaylor/DRFNS).
 
 # Run DRFNS-Lite with ImJoy.io
 
