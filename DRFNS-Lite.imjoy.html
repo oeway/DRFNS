@@ -30,9 +30,9 @@ We tackle the task of nuclei segmentation within histopathology tissue. Many met
   "outputs": null,
   "flags": [],
   "icon": null,
-  "env": ["conda create -n DRFNS2 python=2.7", "git clone https://github.com/oeway/DRFNS-Lite.git"],
-  "requirements":{"CPU": ["scikit-image", "scikit-learn", "numpy", "tensorflow", "progressbar", "nibabel", "joblib", "opencv-python"],
-                  "GPU": ["scikit-image", "scikit-learn", "numpy", "tensorflow-gpu", "progressbar", "nibabel", "joblib", "opencv-python"]
+  "env": ["conda create -n DRFNS python=2.7", "git clone https://github.com/oeway/DRFNS-Lite.git"],
+  "requirements":{"CPU": ["scikit-image", "scikit-learn", "numpy", "tensorflow==1.5", "progressbar", "nibabel", "joblib", "opencv-python"],
+                  "GPU": ["scikit-image", "scikit-learn", "numpy", "tensorflow-gpu==1.5", "progressbar", "nibabel", "joblib", "opencv-python"]
   },
   "dependencies": []
 }
@@ -88,7 +88,7 @@ class PythonPlugin():
 
     def download(self, my):
         if not os.path.exists(DATA_PATH):
-            api.showStatus("downloading data file")
+            api.showStatus("downloading data file ... this might take a litle while.")
             url = my.config.url if my.config.url != '' else 'https://zenodo.org/record/1175282/files/TNBC_NucleiSegmentation.zip'
             r = requests.get(url, allow_redirects=True)
             name_zip = DATA_PATH + '.zip'
@@ -99,7 +99,7 @@ class PythonPlugin():
             zip_ref.extractall(DATA_FOLDER)
             zip_ref.close()
             os.remove(name_zip)
-            api.showStatus("data file saved.")
+            api.showStatus("data file saved. now you can perform the pre-processing.")
         else:
             api.showStatus("data file already downloaded.")
 
@@ -132,7 +132,7 @@ class PythonPlugin():
         sigma2 = my.config.sigma2
         path = DATA_PATH
         transf, transf_test = ListTransform()
-        api.showStatus("preprocessing...")
+        api.showStatus("preprocessing ... this can take a few minutes.")
         size = (512, 512)
         crop = 1
         DG = DataGenMulti(path, crop=crop, size=size, transforms=transf_test,
