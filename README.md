@@ -22,6 +22,9 @@ In the [ImJoy web app](https://imjoy.io/#/app?w=DRFNS), expand the DRFNS-Lite pl
 
 <img src="https://raw.githubusercontent.com/oeway/DRFNS-Lite/master/img/plugin-menu-screenshot.png" width="200"> <img src="https://raw.githubusercontent.com/oeway/DRFNS-Lite/master/img/workflow-screenshot.png" width="200">
 
+## Run the Python engine remotely
+The actual calculations are performed by the ImJoy plugin engine. By default, this engine runs on the local machine. However, some of the calculations during the training are time-consuming. For faster processing, they are ideally performed on GPUs. ImJoy allows to launch the plugin engine on a remote machine, e.g. a GPU server. For more instrucation please consult the [ImJoy User Manual](https://imjoy.io/docs/index.html#/user-manual?id=use-the-python-engine-remotely).
+
 ## About DRFNS
 
 This is the description from the original repository:
