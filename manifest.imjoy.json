@@ -6,7 +6,7 @@
  "plugins": [
     {
     "name": "DRFNS-Lite",
-    "mode": "native-python",
+    "type": "native-python",
     "version": "0.1.0",
     "api_version": "0.1.2",
     "description": "Segmentation of Nuclei in Histopathology Images by deep regression of the distance map",
